@@ -1,4 +1,4 @@
-﻿/**
+/**
  * utils js扩展函数
  * limeng_bj@lakala.com
  * 2019-06-25
@@ -19,14 +19,17 @@
  * base64_decode               |   base64解码
  * utf8_encode                 |   utf8 转码
  * utf8_decode                 |   utf8 解码
+ * getNewURL                   |   url处理
+ * throttle                    |   节流函数
+ * debounce                    |   防抖函数
  * 
  */
 var L = {
     version: 1.0,
-    // system: {
-    //     ua: navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i) || 'pc',
-    //     os: /(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent) ? 'ios' : 'android'
-    // },
+    system: {
+        ua: navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i) || 'pc',
+        os: /(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent) ? 'ios' : 'android'
+    },
     base64_keyStr: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
 };
 
@@ -100,7 +103,7 @@ L.countDown = function(obj) {
 
     if (!_obj.count && _obj.endTime) {
         if (new Date(_obj.endTime) == 'Invalid Date') {
-            return 'Invalid endTime'
+            return 'Invalid endTime';
         }
         _obj.times = new Date(_obj.endTime).getTime() - _obj.beginTime;
     }
@@ -120,7 +123,7 @@ L.countDown = function(obj) {
         nextTime = _obj.interval - offset; //修正误差
         if (nextTime < 0) {
             nextTime = 0;
-        };
+        }
         setTimeout(() => {
             _obj.count++;
             _obj.times -= _obj.interval;
@@ -149,15 +152,15 @@ L.getStorage = function(arr) {
         temp = '',
         len = arr.length;
 
-    if(this.isString(arr)){
+    if (this.isString(arr)) {
         return localStorage.getItem(arr);
-    }else if(this.isArray(arr)){
+    } else if (this.isArray(arr)) {
         for (; i < len; i++) {
             temp = localStorage.getItem(arr[i]);
 
-            if(temp.startsWith('function')){
-                eval('obj.'+arr[i]+'='+temp);
-            }else if(temp.startsWith('{') && temp.endsWith('}') || temp.startsWith('[') && temp.endsWith(']')){
+            if (temp.startsWith('function')) {
+                eval('obj.' + arr[i] + '=' + temp);
+            } else if (temp.startsWith('{') && temp.endsWith('}') || temp.startsWith('[') && temp.endsWith(']')) {
                 obj[arr[i]] = JSON.parse(temp);
             }
         }
@@ -179,15 +182,15 @@ L.img2base64 = function(imgUrl, fn) {
     xhr.open("get", imgUrl, true);
     xhr.responseType = "blob";
     xhr.onload = function() {
-        if (this.status == 200) {      
+        if (this.status == 200) {
             let blob = this.response,
-                oFileReader = new FileReader();    
+                oFileReader = new FileReader();  
             oFileReader.onloadend = function(e) {
-                typeof fn == 'function' && fn(e.target.result)
+                typeof fn == 'function' && fn(e.target.result);
             };
             oFileReader.readAsDataURL(blob);
         }
-    }
+    };
     xhr.send();
 };
 
@@ -303,4 +306,82 @@ L.utf8_decode = function(utftext) {
     return string;
 };
 
-//
+/**
+ * [getNewURL url处理 要不要转码]
+ * @param  {[string]}     url         [URL]
+ * @param  {[object]}     obj         [参数]
+ * @return {[string]}                 [新的URL]
+ */
+L.getNewURL = function(url, obj) {
+    let nUrl = url,
+        key, reg, _val;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            _val = obj[key];
+            _val = key + '=' + (this.isObject(_val) ? JSON.stringify(_val) : _val);
+
+            if (nUrl.isInList(key+'=')) {
+                reg = eval('/(' + key + '=)([^&]*)/gi');
+                nUrl = nUrl.replace(reg, _val);
+            } else {
+                nUrl += (nUrl.indexOf('?') == -1 ? '?' : '&') + _val;
+            }
+        }
+    }
+    return nUrl;
+};
+
+/**
+ * [throttle 函数节流]
+ * @param  {Function}            fn                   [要执行的函数]
+ * @param  {[number]}            wait                 [延迟执行毫秒数]
+ * @param  {[Boolean]}           type                 [false 立即执行，true 延迟执行]
+ */
+L.throttle = function(fn, wait, type) {
+    let before = 0,
+        _wait = wait || 500,
+        timer = null;
+
+    return function() {
+        if (type) {
+            if (!timer) {
+                timer = setTimeout(() => {
+                    timer = null;
+                    fn();
+                }, _wait);
+            }
+        } else {
+            let now = Date.now();
+
+            if (now - before > _wait) {
+                fn();
+                before = now;
+            }
+        }
+    };
+};
+
+/**
+ * [debounce 函数防抖]
+ * @param  {Function}              fn               [要执行的函数]
+ * @param  {[number]}              wait             [延迟执行毫秒数]
+ * @param  {[Boolean]}             type             [false 立即执行，true 延迟执行]
+ */
+L.debounce = function(fn, wait, type) {
+    let timer = null,
+        _wait = wait || 500;
+
+    return () => {
+        timer && clearTimeout(timer);
+        if (type) {
+            timer = setTimeout(() => {
+                fn();
+            }, _wait);
+        } else {
+            if (!timer) fn();
+            timer = setTimeout(() => {
+                timer = null;
+            }, _wait);
+        }
+    };
+};
