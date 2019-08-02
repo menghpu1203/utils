@@ -25,3 +25,6 @@ base64_encode               |   字符串转base64				|
 base64_decode               |   base64解码					|
 utf8_encode                 |   utf8 转码					|
 utf8_decode                 |   utf8 解码					|	
+getNewURL                   |   url处理 					|
+throttle                    |   节流函数					|
+debounce                    |   防抖函数					|
